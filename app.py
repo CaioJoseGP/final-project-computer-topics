@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+import threading
 
 app = Flask(__name__)
 
@@ -27,12 +28,29 @@ class Student(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- Algoritmo de Estresse de CPU ---
+# --- Algoritmo de Estresse de Memória e CPU ---
+hanoi_memory_hog = []
+
+def memory_stress_hanoi(n, source, destination, auxiliary):
+    """
+    Resolve a Torre de Hanói e armazena os movimentos globalmente.
+    Com n=22, gera mais de 4 milhões de chamadas recursivas e armazena tuplas,
+    consumindo memória rapidamente de forma automática.
+    """
+    if n == 1:
+        hanoi_memory_hog.append((source, destination))
+        return
+    memory_stress_hanoi(n-1, source, auxiliary, destination)
+    hanoi_memory_hog.append((source, destination))
+    memory_stress_hanoi(n-1, auxiliary, destination, source)
+
+def run_background_stress():
+    memory_stress_hanoi(22, 'A', 'C', 'B')
+
+# Inicia automaticamente o consumo de memória em background
+threading.Thread(target=run_background_stress, daemon=True).start()
+
 def cpu_stress_hanoi(n, source, destination, auxiliary):
-    """
-    Resolve a Torre de Hanói. Com n=22, gera mais de 4 milhões de chamadas recursivas,
-    segurando a CPU por alguns segundos para simular a lentidão relatada.
-    """
     if n == 1:
         return
     cpu_stress_hanoi(n-1, source, auxiliary, destination)
